@@ -1,0 +1,2 @@
+"Potential use after free","An allocated memory block is used after it has been freed. Behavior in such cases is undefined and can cause memory corruption.","warning","Memory may have been previously freed by [[""delete""|""relative:///CS405-CodeQL.cpp:67:3:67:10""]].","/CS405-CodeQL.cpp","68","3","68","3"
+"Dangerous use of 'cin'","Using `cin` without specifying the length of the input may be dangerous.","error","Use of 'cin' without specifying the length of the input may be dangerous.","/CS405-CodeQL.cpp","41","12","41","12"
