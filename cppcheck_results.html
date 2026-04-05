@@ -1,0 +1,295 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Cppcheck - HTML report - CS405 Project 1</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+
+    </style>
+    <script>
+      function getStyle(el, styleProp) {
+        var y;
+
+        if (el.currentStyle) {
+          y = el.currentStyle[styleProp];
+        } else if (window.getComputedStyle) {
+          y = document.defaultView.getComputedStyle(el, null).getPropertyValue(styleProp);
+        }
+
+        return y;
+      }
+
+      function toggle() {
+        var el = this.expandable_content;
+        var mark = this.expandable_marker;
+
+        if (el.style.display === "block") {
+          el.style.display = "none";
+          mark.textContent = "[+]";
+        } else {
+          el.style.display = "block";
+          mark.textContent = "[-]";
+        }
+      }
+
+      function initExpandables() {
+        var elements = document.querySelectorAll(".expandable");
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          var el = elements[i];
+          var clickable = el.querySelector("span");
+          var marker = clickable.querySelector(".marker");
+          var content = el.querySelector(".content");
+          var width = clickable.clientWidth - parseInt(getStyle(content, "padding-left")) - parseInt(getStyle(content, "padding-right"));
+          content.style.width = width + "px";
+          clickable.expandable_content = content;
+          clickable.expandable_marker = marker;
+          clickable.addEventListener("click", toggle);
+        }
+      }
+
+      function toggleDisplay(cb) {
+        var elements = document.querySelectorAll("." + cb.id);
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          elements[i].classList.toggle("id-filtered", !cb.checked);
+        }
+
+        updateFileRows();
+      }
+
+      function toggleSeverity(cb) {
+        cb.parentElement.classList.toggle("unchecked", !cb.checked);
+        var elements = document.querySelectorAll(".sev_" + cb.id);
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          elements[i].classList.toggle("severity-filtered", !cb.checked);
+        }
+
+        updateFileRows();
+      }
+      
+      function toggleClassification(cb) {
+        cb.parentElement.classList.toggle("unchecked", !cb.checked);
+        var elements = document.querySelectorAll(".class_" + cb.id);
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          elements[i].classList.toggle("classification-filtered", !cb.checked);
+        }
+
+        updateFileRows();
+      }
+    
+      function toggleTool(cb) {
+        cb.parentElement.classList.toggle("unchecked", !cb.checked);
+
+        var elements;
+        if (cb.id == "clang-tidy")
+            elements = document.querySelectorAll("[class^=clang-tidy-]");
+        else
+            elements = document.querySelectorAll(".issue:not([class^=clang-tidy-])");
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          elements[i].classList.toggle("tool-filtered", !cb.checked);
+        }
+
+        updateFileRows();
+      }
+
+      function toggleAll() {
+        var elements = document.querySelectorAll(".idToggle");
+
+        // starting from 1 since 0 is the "toggle all" input
+        for (var i = 1, len = elements.length; i < len; i++) {
+          var changed = elements[i].checked != elements[0].checked;
+          if (changed) {
+            elements[i].checked = elements[0].checked;
+            toggleDisplay(elements[i]);
+          }
+        }
+      }
+
+      function filterFile(filter) {
+        var elements = document.querySelectorAll(".fileEntry");
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          var visible = elements[i].querySelector("tr").querySelector("td").textContent.toLowerCase().includes(filter.toLowerCase());
+          elements[i].classList.toggle("text-filtered", !visible);
+        }
+      }
+
+      function filterText(text) {
+        filter = text.toLowerCase();
+        var elements = document.querySelectorAll(".issue");
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          var visible = false;
+          var fields = elements[i].querySelectorAll("td");
+          for (var n = 0, num = fields.length; n < num; n++) {
+            if (fields[n].textContent.toLowerCase().includes(filter)) {
+              visible = true;
+              break;
+            }
+          }
+          elements[i].classList.toggle("text-filtered", !visible);
+        }
+
+        updateFileRows();
+      }
+
+      function updateFileRows(element) {
+        var elements = document.querySelectorAll(".fileEntry");
+
+        for (var i = 0, len = elements.length; i < len; i++) {
+          var visible = elements[i].querySelector(".issue:not(.id-filtered):not(.severity-filtered):not(.classification-filtered):not(.tool-filtered):not(.text-filtered)");
+          elements[i].classList.toggle("file-filtered", !visible);
+        }
+      }
+
+      function reapplyFilters() {
+        // Reapply ID filters
+        var idToggles = document.querySelectorAll(".idToggle");
+        for (var i = 1; i < idToggles.length; i++) {
+          var cb = idToggles[i];
+          var elements = document.querySelectorAll("." + cb.id);
+          for (var j = 0; j < elements.length; j++) {
+            elements[j].classList.toggle("id-filtered", !cb.checked);
+          }
+        }
+
+        // Reapply severity filters
+        var sevToggles = document.querySelectorAll(".sev_toggle");
+        for (var i = 0; i < sevToggles.length; i++) {
+          var cb = sevToggles[i];
+            var elements = document.querySelectorAll(".sev_" + cb.id);
+          for (var j = 0; j < elements.length; j++) {
+            elements[j].classList.toggle("severity-filtered", !cb.checked);
+          }
+        }
+
+        // Reapply classification filters
+        var classToggles = document.querySelectorAll(".class_toggle");
+        for (var i = 0; i < classToggles.length; i++) {
+          var cb = classToggles[i];
+          var elements = document.querySelectorAll(".class_" + cb.id);
+          for (var j = 0; j < elements.length; j++) {
+            elements[j].classList.toggle("classification-filtered", !cb.checked);
+          }
+        }
+
+        // Reapply tool filters
+        var toolToggles = document.querySelectorAll(".tool_toggle");
+        for (var i = 0; i < toolToggles.length; i++) {
+          var cb = toolToggles[i];
+          var elements;
+          if (cb.id == "clang-tidy")
+            elements = document.querySelectorAll("[class^=clang-tidy-]");
+          else
+            elements = document.querySelectorAll(".issue:not([class^=clang-tidy-])");
+
+          for (var j = 0; j < elements.length; j++) {
+            elements[j].classList.toggle("tool-filtered", !cb.checked);
+          }
+        }
+
+        // Update file rows
+        updateFileRows();
+      }
+
+      window.addEventListener("pageshow", reapplyFilters);
+      window.addEventListener("load", initExpandables);
+    </script>
+  </head>
+  <body>
+    <div id="wrapper">
+    <div id="header" class="header">
+      <h1>Cppcheck report - CS405 Project 1</h1>
+      <div id="filters">
+
+        <label class="checkBtn"><input type="checkbox" onclick="toggleTool(this)" id="cppcheck" checked>cppcheck</label>
+        <label class="checkBtn disabled"><input type="checkbox" onclick="toggleTool(this)" id="clang-tidy" disabled>clang-tidy</label>
+        | 
+        <label class="severityHeader">File: <input type="search" oninput="filterFile(this.value)"></label>
+        <label class="severityHeader">Filter: <input type="search" oninput="filterText(this.value)"></label>
+      </div>
+
+    </div>
+
+    <div id="menu_index">
+     <p><a href="index.html">Defect summary</a> </p>
+
+       <label><input type="checkbox" class="idToggle" onclick="toggleAll()" checked> Toggle all</label>
+       <table>
+           <tr><th>Show</th><th>#</th><th>Defect ID</th></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="missingIncludeSystem" name="missingIncludeSystem" checked></td><td>9</td><td>missingIncludeSystem</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="unusedFunction" name="unusedFunction" checked></td><td>9</td><td>unusedFunction</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="functionStatic" name="functionStatic" checked></td><td>3</td><td>functionStatic</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="uninitvar" name="uninitvar" checked></td><td>2</td><td>uninitvar</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="assignmentInAssert" name="assignmentInAssert" checked></td><td>1</td><td>assignmentInAssert</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="checkersReport" name="checkersReport" checked></td><td>1</td><td>checkersReport</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="cstyleCast" name="cstyleCast" checked></td><td>1</td><td>cstyleCast</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="deallocuse" name="deallocuse" checked></td><td>1</td><td>deallocuse</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="invalidPrintfArgType_s" name="invalidPrintfArgType_s" checked></td><td>1</td><td>invalidPrintfArgType_s</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="invalidPrintfArgType_sint" name="invalidPrintfArgType_sint" checked></td><td>1</td><td>invalidPrintfArgType_sint</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="noCopyConstructor" name="noCopyConstructor" checked></td><td>1</td><td>noCopyConstructor</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="noDestructor" name="noDestructor" checked></td><td>1</td><td>noDestructor</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="noOperatorEq" name="noOperatorEq" checked></td><td>1</td><td>noOperatorEq</td></tr>
+            <tr><td><input type="checkbox" class="idToggle" onclick="toggleDisplay(this)" id="unassignedVariable" name="unassignedVariable" checked></td><td>1</td><td>unassignedVariable</td></tr>
+           <tr><td></td><td>33</td><td>total</td></tr>
+       </table>
+       <p><a href="stats.html">Statistics</a></p>
+    </div>
+    <div id="content_index">
+
+       <table class="summaryTable">
+       <tr><th>Line</th><th>Id</th><th>CWE</th><th>Severity</th><th>Message</th><th>Timestamp</th></tr>
+      <tbody class="fileEntry">
+       <tr><td colspan="6"><a href="1.html"></a></td></tr>
+         <tr class="checkersReport sev_information class_ issue"><td></td><td>checkersReport</td><td></td><td>information</td><td>Active checkers: 173/186 (use --checkers-report=&lt;filename&gt; to see details)</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+      <tbody class="fileEntry">
+       <tr><td colspan="6"><a href="0.html">D:/Desktop/CS405-Cppcheck.cpp</a></td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-8">8</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;limits.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-9">9</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;stdio.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-10">10</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;stdlib.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-11">11</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;string.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-12">12</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;assert.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-13">13</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;stddef.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-14">14</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;syslog.h&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-15">15</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;iostream&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="missingIncludeSystem sev_information class_ issue"><td><a href="0.html#line-16">16</a></td><td>missingIncludeSystem</td><td></td><td>information</td><td>Include file: &lt;new&gt; not found. Please note: Standard library headers do not need to be provided to get proper results.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-21">21</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std001&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-31">31</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std002&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unassignedVariable sev_style class_ issue"><td><a href="0.html#line-32">32</a></td><td>unassignedVariable</td><td><a href="https://cwe.mitre.org/data/definitions/665.html">665</a></td><td>style</td><td>Variable &apos;i&apos; is not assigned a value.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="uninitvar sev_error class_ issue"><td><a href="0.html#line-33">33</a></td><td>uninitvar</td><td><a href="https://cwe.mitre.org/data/definitions/457.html">457</a></td><td>error</td><td class="error">Uninitialized variable: i</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-39">39</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std003&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-47">47</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std004&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="cstyleCast sev_style class_ issue"><td><a href="0.html#line-50">50</a></td><td>cstyleCast</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>style</td><td>C-style pointer casting</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="functionStatic sev_style class_ issue"><td><a href="0.html#line-62">62</a></td><td>functionStatic</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>style</td><td>The member function &apos;S_std005::f&apos; can be static.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-65">65</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std005&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="deallocuse sev_error class_ issue"><td><a href="0.html#line-68">68</a></td><td>deallocuse</td><td><a href="https://cwe.mitre.org/data/definitions/416.html">416</a></td><td>error</td><td class="error">Dereferencing &apos;s&apos; after it is deallocated / released</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-74">74</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std006&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="assignmentInAssert sev_warning class_ issue"><td><a href="0.html#line-75">75</a></td><td>assignmentInAssert</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>warning</td><td class="warning">Assert statement modifies &apos;index&apos;.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="functionStatic sev_style class_ issue"><td><a href="0.html#line-89">89</a></td><td>functionStatic</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>style</td><td>The member function &apos;C_std007::init&apos; can be static.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="noCopyConstructor sev_warning class_ issue"><td><a href="0.html#line-91">91</a></td><td>noCopyConstructor</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>warning</td><td class="warning">Class &apos;C_std007&apos; does not have a copy constructor which is recommended since it has dynamic memory/resource management.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="noOperatorEq sev_warning class_ issue"><td><a href="0.html#line-91">91</a></td><td>noOperatorEq</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>warning</td><td class="warning">Class &apos;C_std007&apos; does not have a operator= which is recommended since it has dynamic memory/resource management.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="noDestructor sev_warning class_ issue"><td><a href="0.html#line-91">91</a></td><td>noDestructor</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>warning</td><td class="warning">Class &apos;C_std007&apos; does not have a destructor which is recommended since it has dynamic memory/resource management.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-99">99</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std008&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="invalidPrintfArgType_s sev_warning class_ issue"><td><a href="0.html#line-102">102</a></td><td>invalidPrintfArgType_s</td><td><a href="https://cwe.mitre.org/data/definitions/686.html">686</a></td><td>warning</td><td class="warning">%s in format string (no. 1) requires &apos;char *&apos; but the argument type is &apos;signed int&apos;.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="invalidPrintfArgType_sint sev_warning class_ issue"><td><a href="0.html#line-102">102</a></td><td>invalidPrintfArgType_sint</td><td><a href="https://cwe.mitre.org/data/definitions/686.html">686</a></td><td>warning</td><td class="warning">%d in format string (no. 2) requires &apos;int&apos; but the argument type is &apos;const char *&apos;.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-108">108</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std009&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="functionStatic sev_style class_ issue"><td><a href="0.html#line-117">117</a></td><td>functionStatic</td><td><a href="https://cwe.mitre.org/data/definitions/398.html">398</a></td><td>style</td><td>The member function &apos;S_std010::mem_fn&apos; can be static.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="unusedFunction sev_style class_ issue"><td><a href="0.html#line-120">120</a></td><td>unusedFunction</td><td><a href="https://cwe.mitre.org/data/definitions/561.html">561</a></td><td>style</td><td>The function &apos;test_std010&apos; is never used.</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+         <tr class="uninitvar sev_error class_ issue"><td><a href="0.html#line-122">122</a></td><td>uninitvar</td><td><a href="https://cwe.mitre.org/data/definitions/457.html">457</a></td><td>error</td><td class="error">Uninitialized variable: s</td><td>Sat Apr  4 14:16:58 2026</td></tr>
+      </tbody>
+       </table>
+    </div>
+    <div id="footer" class="footer">
+      <p>
+        Created by Cppcheck 2.20.0 (<a href="https://cppcheck.sourceforge.io">Sourceforge</a>, <a href="irc://irc.libera.chat/#cppcheck">IRC</a>)
+      </p>
+    </div>
+    </div>
+  </body>
+</html>
